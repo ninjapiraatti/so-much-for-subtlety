@@ -1,0 +1,8 @@
+[package]
+name = "so-much-for-subtlety"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+avian2d = "0.2"
+bevy = "0.15.0"
