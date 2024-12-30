@@ -66,8 +66,24 @@ fn setup(
     // Player
     commands.spawn((
         Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
-        MeshMaterial2d(materials.add(Color::srgb(0.2, 0.7, 0.9))),
-        Transform::from_xyz(0.0, -100.0, 0.0),
+        MeshMaterial2d(materials.add(Color::srgb(0.9, 0.1, 0.1))),
+        Transform::from_xyz(50.0, -100.0, 0.0),
+        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
+            1250.0,
+            0.92,
+            400.0,
+            (30.0 as Scalar).to_radians(),
+        ),
+        Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
+        Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
+        ColliderDensity(2.0),
+        GravityScale(1.5),
+    ));
+
+    commands.spawn((
+        Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
+        MeshMaterial2d(materials.add(Color::srgb(0.1, 0.9, 0.1))),
+        Transform::from_xyz(-50.0, -100.0, 0.0),
         CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
             1250.0,
             0.92,

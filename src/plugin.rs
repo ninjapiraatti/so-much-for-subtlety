@@ -147,14 +147,15 @@ fn keyboard_input(
 // Sends [`MovementAction`] events based on gamepad input.
 fn gamepad_input(
     mut movement_event_writer: EventWriter<MovementAction>,
-    gamepads: Query<&Gamepad>,
+    gamepads: Query<(Entity, &Gamepad)>,
 ) {
-    for gamepad in gamepads.iter() {
-        if let Some(x) = gamepad.get(GamepadAxis::LeftStickX) {
-            movement_event_writer.send(MovementAction::Move(x as Scalar));
-        }
+    for (entity, gamepad) in &gamepads {
+        let x = gamepad.get(GamepadAxis::LeftStickX).unwrap();
+        movement_event_writer.send(MovementAction::Move(x as Scalar));
 
-        if gamepad.just_pressed(GamepadButton::South) {
+        let button = gamepad.get(GamepadButton::South).unwrap();
+        if button.abs() > 0.01 {
+            info!("entity: {}", entity);
             movement_event_writer.send(MovementAction::Jump);
         }
     }
