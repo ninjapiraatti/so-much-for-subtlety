@@ -17,14 +17,12 @@ use bevy::{
     prelude::*,
     render::{render_asset::RenderAssetUsages, render_resource::PrimitiveTopology},
 };
-//use examples_common_2d::ExampleCommonPlugin;
 use plugin::*;
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            //ExampleCommonPlugin,
             // Add physics plugins and specify a units-per-meter scaling factor, 1 meter = 20 pixels.
             // The unit allows the engine to tune its parameters for the scale of the world, improving stability.
             PhysicsPlugins::default().with_length_unit(20.0),
@@ -37,68 +35,12 @@ fn main() {
         //.add_systems(Update, gamepad_system)
         .run();
 }
-/*
-fn gamepad_system(gamepads: Query<(Entity, &Gamepad)>) {
-    for (entity, gamepad) in &gamepads {
-        if gamepad.just_pressed(GamepadButton::South) {
-            info!("{} just pressed South", entity);
-        } else if gamepad.just_released(GamepadButton::South) {
-            info!("{} just released South", entity);
-        }
-
-        let right_trigger = gamepad.get(GamepadButton::RightTrigger2).unwrap();
-        if right_trigger.abs() > 0.01 {
-            info!("{} RightTrigger2 value is {}", entity, right_trigger);
-        }
-
-        let left_stick_x = gamepad.get(GamepadAxis::LeftStickX).unwrap();
-        if left_stick_x.abs() > 0.01 {
-            info!("{} LeftStickX value is {}", entity, left_stick_x);
-        }
-    }
-}
-*/
 
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    // Player
-    /*
-    commands.spawn((
-        Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
-        MeshMaterial2d(materials.add(Color::srgb(0.9, 0.1, 0.1))),
-        Transform::from_xyz(50.0, -100.0, 0.0),
-        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
-            1250.0,
-            0.92,
-            400.0,
-            (30.0 as Scalar).to_radians(),
-        ),
-        Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
-        Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
-        ColliderDensity(2.0),
-        GravityScale(1.5),
-    ));
-
-    commands.spawn((
-        Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
-        MeshMaterial2d(materials.add(Color::srgb(0.1, 0.9, 0.1))),
-        Transform::from_xyz(-50.0, -100.0, 0.0),
-        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
-            1250.0,
-            0.92,
-            400.0,
-            (30.0 as Scalar).to_radians(),
-        ),
-        Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
-        Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
-        ColliderDensity(2.0),
-        GravityScale(1.5),
-    ));
-    */
-
     // A cube to move around
     commands.spawn((
         Sprite {
