@@ -1,5 +1,6 @@
 use avian2d::{math::*, prelude::*};
 use bevy::{ecs::query::Has, prelude::*};
+use std::collections::HashMap;
 
 pub struct CharacterControllerPlugin;
 
@@ -13,6 +14,7 @@ impl Plugin for CharacterControllerPlugin {
                 update_grounded,
                 movement,
                 apply_movement_damping,
+                spawn_character,
             )
                 .chain(),
         );
@@ -22,8 +24,14 @@ impl Plugin for CharacterControllerPlugin {
 // An event sent for a movement input action.
 #[derive(Event)]
 pub enum MovementAction {
-    Move(Scalar),
-    Jump,
+    Move(Entity, Scalar),
+    Jump(Entity),
+}
+
+#[derive(Resource, Default)]
+pub struct PlayerAssignments {
+    // Map each Gamepad to its spawned character
+    pub players: HashMap<u32, Entity>,
 }
 
 // A marker component indicating that an entity is using a character controller.
@@ -124,27 +132,40 @@ impl CharacterControllerBundle {
     }
 }
 
-// Sends [`MovementAction`] events based on keyboard input.
-fn keyboard_input(
-    mut movement_event_writer: EventWriter<MovementAction>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
+fn spawn_character(
+    mut commands: Commands,
+    mut assignments: ResMut<PlayerAssignments>,
+    gamepads: Query<(Entity, &Gamepad)>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
-    let right = keyboard_input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
-
-    let horizontal = right as i8 - left as i8;
-    let direction = horizontal as Scalar;
-
-    if direction != 0.0 {
-        movement_event_writer.send(MovementAction::Move(direction));
-    }
-
-    if keyboard_input.just_pressed(KeyCode::Space) {
-        movement_event_writer.send(MovementAction::Jump);
+    for (entity, gamepad) in &gamepads {
+        let start_button = gamepad.get(GamepadButton::South).unwrap_or(0.0);
+        let gid = entity.index();
+        println!("start_button: {}", start_button);
+        if start_button > 0.1 && !assignments.players.contains_key(&gid) {
+            println!("spawning player");
+            let entity =
+                commands
+                    .spawn((
+                        Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
+                        MeshMaterial2d(materials.add(Color::srgb(0.9, 0.1, 0.1))),
+                        Transform::from_xyz(50.0, -100.0, 0.0),
+                        CharacterControllerBundle::new(Collider::capsule(12.5, 20.0))
+                            .with_movement(1250.0, 0.92, 400.0, (30.0 as Scalar).to_radians()),
+                        Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
+                        Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
+                        ColliderDensity(2.0),
+                        GravityScale(1.5),
+                    ))
+                    .id();
+            assignments.players.insert(gid, entity);
+        }
     }
 }
 
 // Sends [`MovementAction`] events based on gamepad input.
+/*
 fn gamepad_input(
     mut movement_event_writer: EventWriter<MovementAction>,
     gamepads: Query<(Entity, &Gamepad)>,
@@ -158,6 +179,47 @@ fn gamepad_input(
             info!("entity: {}", entity);
             movement_event_writer.send(MovementAction::Jump);
         }
+    }
+}
+*/
+
+fn gamepad_input(
+    mut movement_event_writer: EventWriter<MovementAction>,
+    assignments: Res<PlayerAssignments>,
+    gamepads: Query<(Entity, &Gamepad)>,
+) {
+    for (entity, gamepad) in &gamepads {
+        let gid = entity.index();
+        if let Some(entity) = assignments.players.get(&gid) {
+            let x = gamepad.get(GamepadAxis::LeftStickX).unwrap_or(0.0);
+            if x.abs() > 0.01 {
+                movement_event_writer.send(MovementAction::Move(*entity, x.into()));
+            }
+            let jump = gamepad.get(GamepadButton::South).unwrap_or(0.0);
+            if jump > 0.1 {
+                movement_event_writer.send(MovementAction::Jump(*entity));
+            }
+        }
+    }
+}
+
+// Sends [`MovementAction`] events based on keyboard input.
+fn keyboard_input(
+    //mut movement_event_writer: EventWriter<MovementAction>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+) {
+    let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
+    let right = keyboard_input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
+
+    let horizontal = right as i8 - left as i8;
+    let direction = horizontal as Scalar;
+
+    if direction != 0.0 {
+        //movement_event_writer.send(MovementAction::Move(direction));
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        //movement_event_writer.send(MovementAction::Jump);
     }
 }
 
@@ -193,6 +255,7 @@ fn movement(
     time: Res<Time>,
     mut movement_event_reader: EventReader<MovementAction>,
     mut controllers: Query<(
+        Entity,
         &MovementAcceleration,
         &JumpImpulse,
         &mut LinearVelocity,
@@ -203,17 +266,36 @@ fn movement(
     // both the `f32` and `f64` features. Otherwise you don't need this.
     let delta_time = time.delta_secs_f64().adjust_precision();
 
+    /*
     for event in movement_event_reader.read() {
         for (movement_acceleration, jump_impulse, mut linear_velocity, is_grounded) in
             &mut controllers
         {
             match event {
-                MovementAction::Move(direction) => {
+                MovementAction::Move(e, direction) => {
                     linear_velocity.x += *direction * movement_acceleration.0 * delta_time;
                 }
-                MovementAction::Jump => {
+                MovementAction::Jump(e) => {
                     if is_grounded {
                         linear_velocity.y = jump_impulse.0;
+                    }
+                }
+            }
+        }
+    }
+    */
+
+    for event in movement_event_reader.read() {
+        match event {
+            MovementAction::Move(e, dir) => {
+                if let Ok((_, accel, _, mut vel, _)) = controllers.get_mut(*e) {
+                    vel.x += dir * accel.0 * delta_time;
+                }
+            }
+            MovementAction::Jump(e) => {
+                if let Ok((_, _, jump, mut vel, grounded)) = controllers.get_mut(*e) {
+                    if grounded {
+                        vel.y = jump.0;
                     }
                 }
             }

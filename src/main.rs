@@ -31,6 +31,7 @@ fn main() {
             CharacterControllerPlugin,
         ))
         .insert_resource(ClearColor(Color::srgb(0.05, 0.05, 0.1)))
+        .insert_resource(PlayerAssignments::default())
         .insert_resource(Gravity(Vector::NEG_Y * 1000.0))
         .add_systems(Startup, setup)
         //.add_systems(Update, gamepad_system)
@@ -64,6 +65,7 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // Player
+    /*
     commands.spawn((
         Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
         MeshMaterial2d(materials.add(Color::srgb(0.9, 0.1, 0.1))),
@@ -95,6 +97,7 @@ fn setup(
         ColliderDensity(2.0),
         GravityScale(1.5),
     ));
+    */
 
     // A cube to move around
     commands.spawn((
