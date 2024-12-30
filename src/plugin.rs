@@ -19,41 +19,41 @@ impl Plugin for CharacterControllerPlugin {
     }
 }
 
-/// An event sent for a movement input action.
+// An event sent for a movement input action.
 #[derive(Event)]
 pub enum MovementAction {
     Move(Scalar),
     Jump,
 }
 
-/// A marker component indicating that an entity is using a character controller.
+// A marker component indicating that an entity is using a character controller.
 #[derive(Component)]
 pub struct CharacterController;
 
-/// A marker component indicating that an entity is on the ground.
+// A marker component indicating that an entity is on the ground.
 #[derive(Component)]
 #[component(storage = "SparseSet")]
 pub struct Grounded;
-/// The acceleration used for character movement.
+// The acceleration used for character movement.
 #[derive(Component)]
 pub struct MovementAcceleration(Scalar);
 
-/// The damping factor used for slowing down movement.
+// The damping factor used for slowing down movement.
 #[derive(Component)]
 pub struct MovementDampingFactor(Scalar);
 
-/// The strength of a jump.
+// The strength of a jump.
 #[derive(Component)]
 pub struct JumpImpulse(Scalar);
 
-/// The maximum angle a slope can have for a character controller
-/// to be able to climb and jump. If the slope is steeper than this angle,
-/// the character will slide down.
+// The maximum angle a slope can have for a character controller
+// to be able to climb and jump. If the slope is steeper than this angle,
+// the character will slide down.
 #[derive(Component)]
 pub struct MaxSlopeAngle(Scalar);
 
-/// A bundle that contains the components needed for a basic
-/// kinematic character controller.
+// A bundle that contains the components needed for a basic
+// kinematic character controller.
 #[derive(Bundle)]
 pub struct CharacterControllerBundle {
     character_controller: CharacterController,
@@ -64,7 +64,7 @@ pub struct CharacterControllerBundle {
     movement: MovementBundle,
 }
 
-/// A bundle that contains components for character movement.
+// A bundle that contains components for character movement.
 #[derive(Bundle)]
 pub struct MovementBundle {
     acceleration: MovementAcceleration,
@@ -124,7 +124,7 @@ impl CharacterControllerBundle {
     }
 }
 
-/// Sends [`MovementAction`] events based on keyboard input.
+// Sends [`MovementAction`] events based on keyboard input.
 fn keyboard_input(
     mut movement_event_writer: EventWriter<MovementAction>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
@@ -144,7 +144,7 @@ fn keyboard_input(
     }
 }
 
-/// Sends [`MovementAction`] events based on gamepad input.
+// Sends [`MovementAction`] events based on gamepad input.
 fn gamepad_input(
     mut movement_event_writer: EventWriter<MovementAction>,
     gamepads: Query<&Gamepad>,
@@ -160,7 +160,7 @@ fn gamepad_input(
     }
 }
 
-/// Updates the [`Grounded`] status for character controllers.
+// Updates the [`Grounded`] status for character controllers.
 fn update_grounded(
     mut commands: Commands,
     mut query: Query<
@@ -187,7 +187,7 @@ fn update_grounded(
     }
 }
 
-/// Responds to [`MovementAction`] events and moves character controllers accordingly.
+// Responds to [`MovementAction`] events and moves character controllers accordingly.
 fn movement(
     time: Res<Time>,
     mut movement_event_reader: EventReader<MovementAction>,
@@ -220,7 +220,7 @@ fn movement(
     }
 }
 
-/// Slows down movement in the X direction.
+// Slows down movement in the X direction.
 fn apply_movement_damping(mut query: Query<(&MovementDampingFactor, &mut LinearVelocity)>) {
     for (damping_factor, mut linear_velocity) in &mut query {
         // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
