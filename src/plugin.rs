@@ -16,6 +16,7 @@ impl Plugin for CharacterControllerPlugin {
                 apply_movement_damping,
                 spawn_character,
                 apply_aim_to_gun,
+                move_objects,
             )
                 .chain(),
         );
@@ -38,6 +39,12 @@ pub struct PlayerAssignments {
 
 #[derive(Component)]
 struct Gun;
+
+#[derive(Component)]
+pub struct Projectile {
+    pub velocity: Vec2,
+    pub lifetime: f32, // Time before the projectile is destroyed
+}
 
 // A marker component indicating that an entity is using a character controller.
 #[derive(Component)]
@@ -196,6 +203,7 @@ fn gamepad_input(
     mut movement_event_writer: EventWriter<MovementAction>,
     assignments: Res<PlayerAssignments>,
     gamepads: Query<(Entity, &Gamepad)>,
+    mut commands: Commands,
 ) {
     for (entity, gamepad) in &gamepads {
         let gid = entity.index();
@@ -214,6 +222,23 @@ fn gamepad_input(
             let ry = gamepad.get(GamepadAxis::RightStickY).unwrap_or(0.0);
             if rx.abs() > 0.01 || ry.abs() > 0.01 {
                 movement_event_writer.send(MovementAction::Aim(*entity, rx, ry));
+            }
+            let fire_button = gamepad.get(GamepadButton::RightTrigger).unwrap_or(0.0); // Change to your firing button
+            if fire_button > 0.1 {
+                // Spawn a projectile
+                commands.spawn((
+                    Projectile {
+                        velocity: Vec2::ZERO, // Set later based on the gun's angle
+                        lifetime: 2.0,        // Set a lifetime for the projectile
+                    },
+                    // Add other components for the projectile, like sprite, position, etc.
+                    Sprite {
+                        color: Color::WHITE,
+                        custom_size: Some(Vec2::new(5.0, 5.0)), // Size of the projectile
+                        ..default()
+                    },
+                    Transform::default(), // Position will be set later
+                ));
             }
         }
     }
@@ -322,5 +347,25 @@ fn apply_movement_damping(mut query: Query<(&MovementDampingFactor, &mut LinearV
     for (damping_factor, mut linear_velocity) in &mut query {
         // We could use `LinearDamping`, but we don't want to dampen movement along the Y axis
         linear_velocity.x *= damping_factor.0;
+    }
+}
+
+fn move_objects(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Transform, &mut Projectile)>,
+) {
+    for (entity, mut transform, mut projectile) in query.iter_mut() {
+        // Update position based on velocity
+        let delta_time = time.delta_secs_f64().adjust_precision();
+        transform.translation += projectile.velocity.extend(0.0) * delta_time;
+
+        // Decrease lifetime
+        if projectile.lifetime > 0.0 {
+            projectile.lifetime -= delta_time;
+        } else {
+            // Remove the projectile after its lifetime expires
+            commands.entity(entity).despawn();
+        }
     }
 }
