@@ -357,7 +357,7 @@ fn apply_aim_to_gun(
                 commands.spawn((
                     Projectile {
                         //velocity: aim.0 * Vec2::new(500.0, 0.0), // Set velocity based on the angle
-                        velocity: Vec2::new(500.0, 0.0), // Set velocity based on the angle
+                        velocity: (aim.0 * Vec3::new(500.0, 0.0, 0.0)).truncate(), // Set velocity based on the angle
                         lifetime: 2.0,
                     },
                     Sprite {
