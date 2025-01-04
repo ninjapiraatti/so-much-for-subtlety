@@ -178,7 +178,8 @@ fn spawn_character(
                     parent.spawn((
                         Sprite {
                             color: Color::srgb(0.2, 0.2, 0.2),
-                            custom_size: Some(Vec2::new(10.0, 20.0)),
+                            custom_size: Some(Vec2::new(10.0, 40.0)),
+                            anchor: bevy::sprite::Anchor::TopCenter,
                             ..default()
                         },
                         Transform::default(),
@@ -297,7 +298,7 @@ fn movement(
             }
             MovementAction::Aim(e, x, y) => {
                 if let Ok((_, _, _, mut aim, _, _)) = controllers.get_mut(*e) {
-                    let angle = y.atan2(*x);
+                    let angle = y.atan2(*x) + std::f32::consts::PI / 2.0;
                     aim.0 = Quat::from_rotation_z(angle);
                 }
             }
