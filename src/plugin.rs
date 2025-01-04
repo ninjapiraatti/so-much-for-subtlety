@@ -353,11 +353,14 @@ fn apply_aim_to_gun(
         if let Ok((_, aim, mut fire)) = controllers.get_mut(parent.get()) {
             transform.rotation = aim.0;
             if fire.0 > 0.0 {
+                let adjusted_aim = aim.0 * Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2); // Rotate by 90 degrees
+                let velocity = (adjusted_aim * Vec3::new(500.0, 0.0, 0.0)).truncate();
                 println!("Fire impulse: {:?}", fire.0);
                 commands.spawn((
                     Projectile {
                         //velocity: aim.0 * Vec2::new(500.0, 0.0), // Set velocity based on the angle
-                        velocity: (aim.0 * Vec3::new(500.0, 0.0, 0.0)).truncate(), // Set velocity based on the angle
+                        //velocity: (aim.0 * Vec3::new(500.0, 0.0, 0.0)).truncate(), // Set velocity based on the angle
+                        velocity: velocity,
                         lifetime: 2.0,
                     },
                     Sprite {
