@@ -342,9 +342,15 @@ fn movement(
 fn apply_aim_to_gun(
     controllers: Query<(Entity, &AimRotation, &FireImpulse)>,
     mut guns: Query<(&Parent, &mut Transform), With<Gun>>,
+    transforms: Query<&Transform, Without<Gun>>,
     mut commands: Commands,
 ) {
     for (parent, mut transform) in &mut guns {
+        let bullet_transform = if let Ok(parent_transform) = transforms.get(parent.get()) {
+            parent_transform.clone()
+        } else {
+            Transform::default()
+        };
         if let Ok((_, aim, fire)) = controllers.get(parent.get()) {
             transform.rotation = aim.0;
             if fire.0 > 0.0 {
@@ -361,7 +367,7 @@ fn apply_aim_to_gun(
                         ..default()
                     },
                     Transform {
-                        translation: transform.translation, // Spawn at the gun's position
+                        translation: bullet_transform.translation, // Spawn at the gun's position
                         rotation: transform.rotation,
                         ..default()
                     },
