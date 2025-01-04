@@ -331,7 +331,6 @@ fn movement(
             }
             PlayerAction::Fire(e) => {
                 if let Ok((_, _, _, _, _, _, mut fire)) = controllers.get_mut(*e) {
-                    println!("Fire impulse: {:?}", fire.0);
                     fire.0 = 1.0;
                 }
             }
@@ -340,7 +339,7 @@ fn movement(
 }
 
 fn apply_aim_to_gun(
-    controllers: Query<(Entity, &AimRotation, &FireImpulse)>,
+    mut controllers: Query<(Entity, &AimRotation, &mut FireImpulse)>,
     mut guns: Query<(&Parent, &mut Transform), With<Gun>>,
     transforms: Query<&Transform, Without<Gun>>,
     mut commands: Commands,
@@ -351,7 +350,7 @@ fn apply_aim_to_gun(
         } else {
             Transform::default()
         };
-        if let Ok((_, aim, fire)) = controllers.get(parent.get()) {
+        if let Ok((_, aim, mut fire)) = controllers.get_mut(parent.get()) {
             transform.rotation = aim.0;
             if fire.0 > 0.0 {
                 println!("Fire impulse: {:?}", fire.0);
@@ -373,6 +372,7 @@ fn apply_aim_to_gun(
                     },
                 ));
             }
+            fire.0 = 0.0;
         }
     }
 }
