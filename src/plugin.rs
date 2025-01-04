@@ -6,7 +6,7 @@ pub struct CharacterControllerPlugin;
 
 impl Plugin for CharacterControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<MovementAction>().add_systems(
+        app.add_event::<PlayerAction>().add_systems(
             Update,
             (
                 keyboard_input,
@@ -25,10 +25,11 @@ impl Plugin for CharacterControllerPlugin {
 
 // An event sent for a movement input action.
 #[derive(Event)]
-pub enum MovementAction {
+pub enum PlayerAction {
     Move(Entity, Scalar),
     Jump(Entity),
     Aim(Entity, Scalar, Scalar),
+    Fire(Entity),
 }
 
 #[derive(Resource, Default)]
@@ -66,6 +67,9 @@ pub struct MovementDampingFactor(Scalar);
 #[derive(Component)]
 pub struct JumpImpulse(Scalar);
 
+#[derive(Component)]
+pub struct FireImpulse(Scalar);
+
 // The maximum angle a slope can have for a character controller
 // to be able to climb and jump. If the slope is steeper than this angle,
 // the character will slide down.
@@ -96,6 +100,7 @@ pub struct MovementBundle {
     jump_impulse: JumpImpulse,
     aiming: AimRotation,
     max_slope_angle: MaxSlopeAngle,
+    fire_impulse: FireImpulse,
 }
 
 impl MovementBundle {
@@ -105,6 +110,7 @@ impl MovementBundle {
         jump_impulse: Scalar,
         aiming: Quat,
         max_slope_angle: Scalar,
+        fire_impulse: Scalar,
     ) -> Self {
         Self {
             acceleration: MovementAcceleration(acceleration),
@@ -112,13 +118,14 @@ impl MovementBundle {
             jump_impulse: JumpImpulse(jump_impulse),
             aiming: AimRotation(aiming),
             max_slope_angle: MaxSlopeAngle(max_slope_angle),
+            fire_impulse: FireImpulse(fire_impulse),
         }
     }
 }
 
 impl Default for MovementBundle {
     fn default() -> Self {
-        Self::new(30.0, 0.9, 7.0, Quat::IDENTITY, PI * 0.45)
+        Self::new(30.0, 0.9, 7.0, Quat::IDENTITY, PI * 0.45, 0.0)
     }
 }
 
@@ -146,9 +153,16 @@ impl CharacterControllerBundle {
         jump_impulse: Scalar,
         aiming: Quat,
         max_slope_angle: Scalar,
+        fire_impulse: Scalar,
     ) -> Self {
-        self.movement =
-            MovementBundle::new(acceleration, damping, jump_impulse, aiming, max_slope_angle);
+        self.movement = MovementBundle::new(
+            acceleration,
+            damping,
+            jump_impulse,
+            aiming,
+            max_slope_angle,
+            fire_impulse,
+        );
         self
     }
 }
@@ -175,6 +189,7 @@ fn spawn_character(
                         400.0,
                         Quat::IDENTITY,
                         (30.0 as Scalar).to_radians(),
+                        0.0,
                     ),
                     Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
                     Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
@@ -200,10 +215,9 @@ fn spawn_character(
 }
 
 fn gamepad_input(
-    mut movement_event_writer: EventWriter<MovementAction>,
+    mut movement_event_writer: EventWriter<PlayerAction>,
     assignments: Res<PlayerAssignments>,
     gamepads: Query<(Entity, &Gamepad)>,
-    mut commands: Commands,
 ) {
     for (entity, gamepad) in &gamepads {
         let gid = entity.index();
@@ -211,42 +225,29 @@ fn gamepad_input(
             // Movement
             let x = gamepad.get(GamepadAxis::LeftStickX).unwrap_or(0.0);
             if x.abs() > 0.01 {
-                movement_event_writer.send(MovementAction::Move(*entity, x.into()));
+                movement_event_writer.send(PlayerAction::Move(*entity, x.into()));
             }
             let jump = gamepad.get(GamepadButton::South).unwrap_or(0.0);
             if jump > 0.1 {
-                movement_event_writer.send(MovementAction::Jump(*entity));
+                movement_event_writer.send(PlayerAction::Jump(*entity));
             }
             // Aiming
             let rx = gamepad.get(GamepadAxis::RightStickX).unwrap_or(0.0);
             let ry = gamepad.get(GamepadAxis::RightStickY).unwrap_or(0.0);
             if rx.abs() > 0.01 || ry.abs() > 0.01 {
-                movement_event_writer.send(MovementAction::Aim(*entity, rx, ry));
+                movement_event_writer.send(PlayerAction::Aim(*entity, rx, ry));
             }
-            let fire_button = gamepad.get(GamepadButton::RightTrigger).unwrap_or(0.0); // Change to your firing button
-            if fire_button > 0.1 {
-                // Spawn a projectile
-                commands.spawn((
-                    Projectile {
-                        velocity: Vec2::ZERO, // Set later based on the gun's angle
-                        lifetime: 2.0,        // Set a lifetime for the projectile
-                    },
-                    // Add other components for the projectile, like sprite, position, etc.
-                    Sprite {
-                        color: Color::WHITE,
-                        custom_size: Some(Vec2::new(5.0, 5.0)), // Size of the projectile
-                        ..default()
-                    },
-                    Transform::default(), // Position will be set later
-                ));
+            let fire = gamepad.get(GamepadButton::RightTrigger).unwrap_or(0.0);
+            if fire > 0.1 {
+                movement_event_writer.send(PlayerAction::Fire(*entity));
             }
         }
     }
 }
 
-// Sends [`MovementAction`] events based on keyboard input.
+// Sends [`PlayerAction`] events based on keyboard input.
 fn keyboard_input(
-    //mut movement_event_writer: EventWriter<MovementAction>,
+    //mut movement_event_writer: EventWriter<PlayerAction>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
@@ -256,11 +257,11 @@ fn keyboard_input(
     let direction = horizontal as Scalar;
 
     if direction != 0.0 {
-        //movement_event_writer.send(MovementAction::Move(direction));
+        //movement_event_writer.send(PlayerAction::Move(direction));
     }
 
     if keyboard_input.just_pressed(KeyCode::Space) {
-        //movement_event_writer.send(MovementAction::Jump);
+        //movement_event_writer.send(PlayerAction::Jump);
     }
 }
 
@@ -291,10 +292,10 @@ fn update_grounded(
     }
 }
 
-// Responds to [`MovementAction`] events and moves character controllers accordingly.
+// Responds to [`PlayerAction`] events and moves character controllers accordingly.
 fn movement(
     time: Res<Time>,
-    mut movement_event_reader: EventReader<MovementAction>,
+    mut movement_event_reader: EventReader<PlayerAction>,
     mut controllers: Query<(
         Entity,
         &MovementAcceleration,
@@ -302,6 +303,7 @@ fn movement(
         &mut AimRotation,
         &mut LinearVelocity,
         Has<Grounded>,
+        &mut FireImpulse,
     )>,
 ) {
     // Precision is adjusted so that the example works with
@@ -309,22 +311,28 @@ fn movement(
     let delta_time = time.delta_secs_f64().adjust_precision();
     for event in movement_event_reader.read() {
         match event {
-            MovementAction::Move(e, dir) => {
-                if let Ok((_, accel, _, _, mut vel, _)) = controllers.get_mut(*e) {
+            PlayerAction::Move(e, dir) => {
+                if let Ok((_, accel, _, _, mut vel, _, _)) = controllers.get_mut(*e) {
                     vel.x += dir * accel.0 * delta_time;
                 }
             }
-            MovementAction::Jump(e) => {
-                if let Ok((_, _, jump, _, mut vel, grounded)) = controllers.get_mut(*e) {
+            PlayerAction::Jump(e) => {
+                if let Ok((_, _, jump, _, mut vel, grounded, _)) = controllers.get_mut(*e) {
                     if grounded {
                         vel.y = jump.0;
                     }
                 }
             }
-            MovementAction::Aim(e, x, y) => {
-                if let Ok((_, _, _, mut aim, _, _)) = controllers.get_mut(*e) {
+            PlayerAction::Aim(e, x, y) => {
+                if let Ok((_, _, _, mut aim, _, _, _)) = controllers.get_mut(*e) {
                     let angle = y.atan2(*x) + std::f32::consts::PI / 2.0;
                     aim.0 = Quat::from_rotation_z(angle);
+                }
+            }
+            PlayerAction::Fire(e) => {
+                if let Ok((_, _, _, _, _, _, mut fire)) = controllers.get_mut(*e) {
+                    println!("Fire impulse: {:?}", fire.0);
+                    fire.0 = 1.0;
                 }
             }
         }
@@ -332,12 +340,33 @@ fn movement(
 }
 
 fn apply_aim_to_gun(
-    controllers: Query<(Entity, &AimRotation)>,
+    controllers: Query<(Entity, &AimRotation, &FireImpulse)>,
     mut guns: Query<(&Parent, &mut Transform), With<Gun>>,
+    mut commands: Commands,
 ) {
     for (parent, mut transform) in &mut guns {
-        if let Ok((_, aim)) = controllers.get(parent.get()) {
+        if let Ok((_, aim, fire)) = controllers.get(parent.get()) {
             transform.rotation = aim.0;
+            if fire.0 > 0.0 {
+                println!("Fire impulse: {:?}", fire.0);
+                commands.spawn((
+                    Projectile {
+                        //velocity: aim.0 * Vec2::new(500.0, 0.0), // Set velocity based on the angle
+                        velocity: Vec2::new(500.0, 0.0), // Set velocity based on the angle
+                        lifetime: 2.0,
+                    },
+                    Sprite {
+                        color: Color::WHITE,
+                        custom_size: Some(Vec2::new(10.0, 10.0)),
+                        ..default()
+                    },
+                    Transform {
+                        translation: transform.translation, // Spawn at the gun's position
+                        rotation: transform.rotation,
+                        ..default()
+                    },
+                ));
+            }
         }
     }
 }
