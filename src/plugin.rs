@@ -275,37 +275,37 @@ fn keyboard_input(
 
     if keyboard_input.just_pressed(KeyCode::Enter) {
         let entity = commands
-                .spawn((
-                    Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
-                    MeshMaterial2d(materials.add(Color::srgb(0.9, 0.1, 0.1))),
-                    Transform::from_xyz(50.0, -100.0, 0.0),
-                    CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
-                        1250.0,
-                        0.92,
-                        400.0,
-                        Quat::IDENTITY,
-                        (30.0 as Scalar).to_radians(),
-                        0.0,
-                    ),
-                    Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
-                    Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
-                    ColliderDensity(2.0),
-                    GravityScale(1.5),
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Sprite {
-                            color: Color::srgb(0.2, 0.2, 0.2),
-                            custom_size: Some(Vec2::new(10.0, 40.0)),
-                            anchor: bevy::sprite::Anchor::TopCenter,
-                            ..default()
-                        },
-                        Transform::default(),
-                        Gun,
-                    ));
-                })
-                .id();
-            assignments.players.insert(5, entity);
+            .spawn((
+                Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
+                MeshMaterial2d(materials.add(Color::srgb(0.9, 0.1, 0.1))),
+                Transform::from_xyz(50.0, -100.0, 0.0),
+                CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
+                    1250.0,
+                    0.92,
+                    400.0,
+                    Quat::IDENTITY,
+                    (30.0 as Scalar).to_radians(),
+                    0.0,
+                ),
+                Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
+                Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
+                ColliderDensity(2.0),
+                GravityScale(1.5),
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Sprite {
+                        color: Color::srgb(0.2, 0.2, 0.2),
+                        custom_size: Some(Vec2::new(10.0, 40.0)),
+                        anchor: bevy::sprite::Anchor::TopCenter,
+                        ..default()
+                    },
+                    Transform::default(),
+                    Gun,
+                ));
+            })
+            .id();
+        assignments.players.insert(5, entity);
     }
 }
 
