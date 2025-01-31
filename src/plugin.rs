@@ -273,6 +273,13 @@ fn keyboard_input(
         }
     }
 
+    if keyboard_input.just_pressed(KeyCode::KeyF) {
+        if let Some(entity) = assignments.players.values().next() {
+            movement_event_writer.send(PlayerAction::Aim(*entity, 0.5, 0.5));
+            movement_event_writer.send(PlayerAction::Fire(*entity));
+        }
+    }
+
     if keyboard_input.just_pressed(KeyCode::Enter) {
         let entity = commands
             .spawn((
@@ -441,7 +448,6 @@ fn move_objects(
         let delta_time = time.delta_secs_f64().adjust_precision();
         transform.translation += projectile.velocity.extend(0.0) * delta_time;
 
-        // Decrease lifetime
         if projectile.lifetime > 0.0 {
             projectile.lifetime -= delta_time;
         } else {
