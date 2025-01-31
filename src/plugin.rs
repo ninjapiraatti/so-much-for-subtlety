@@ -247,8 +247,12 @@ fn gamepad_input(
 
 // Sends [`PlayerAction`] events based on keyboard input.
 fn keyboard_input(
-    //mut movement_event_writer: EventWriter<PlayerAction>,
+    mut commands: Commands,
+    mut movement_event_writer: EventWriter<PlayerAction>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut assignments: ResMut<PlayerAssignments>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let left = keyboard_input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
     let right = keyboard_input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
@@ -257,15 +261,54 @@ fn keyboard_input(
     let direction = horizontal as Scalar;
 
     if direction != 0.0 {
-        //movement_event_writer.send(PlayerAction::Move(direction));
+        // Assuming the player entity is the first one in the assignments
+        if let Some(entity) = assignments.players.values().next() {
+            movement_event_writer.send(PlayerAction::Move(*entity, direction));
+        }
     }
 
     if keyboard_input.just_pressed(KeyCode::Space) {
-        //movement_event_writer.send(PlayerAction::Jump);
+        if let Some(entity) = assignments.players.values().next() {
+            movement_event_writer.send(PlayerAction::Jump(*entity));
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Enter) {
+        let entity = commands
+                .spawn((
+                    Mesh2d(meshes.add(Capsule2d::new(12.5, 20.0))),
+                    MeshMaterial2d(materials.add(Color::srgb(0.9, 0.1, 0.1))),
+                    Transform::from_xyz(50.0, -100.0, 0.0),
+                    CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
+                        1250.0,
+                        0.92,
+                        400.0,
+                        Quat::IDENTITY,
+                        (30.0 as Scalar).to_radians(),
+                        0.0,
+                    ),
+                    Friction::ZERO.with_combine_rule(CoefficientCombine::Min),
+                    Restitution::ZERO.with_combine_rule(CoefficientCombine::Min),
+                    ColliderDensity(2.0),
+                    GravityScale(1.5),
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Sprite {
+                            color: Color::srgb(0.2, 0.2, 0.2),
+                            custom_size: Some(Vec2::new(10.0, 40.0)),
+                            anchor: bevy::sprite::Anchor::TopCenter,
+                            ..default()
+                        },
+                        Transform::default(),
+                        Gun,
+                    ));
+                })
+                .id();
+            assignments.players.insert(5, entity);
     }
 }
 
-// Updates the [`Grounded`] status for character controllers.
 fn update_grounded(
     mut commands: Commands,
     mut query: Query<
