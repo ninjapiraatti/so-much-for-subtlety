@@ -17,7 +17,6 @@ mod game;
 mod input;
 mod player;
 mod weapons;
-mod items;
 
 use player::{
     CharacterControllerPlugin,

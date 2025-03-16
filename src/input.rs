@@ -1,5 +1,5 @@
 use avian2d::{math::*, prelude::*};
-use bevy::{prelude::*};
+use bevy::prelude::*;
 
 use crate::weapons::Gun;
 use crate::player::{
