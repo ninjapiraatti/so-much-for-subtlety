@@ -125,7 +125,7 @@ impl MovementBundle {
 
 impl Default for MovementBundle {
     fn default() -> Self {
-        Self::new(30.0, 0.9, 7.0, Quat::IDENTITY, PI * 0.45, 0.0)
+        Self::new(30.0, 0.9, 200.0, Quat::IDENTITY, PI * 0.45, 0.0)
     }
 }
 
@@ -186,7 +186,7 @@ fn spawn_character(
                     CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
                         1250.0,
                         0.92,
-                        400.0,
+                        1200.0,
                         Quat::IDENTITY,
                         (30.0 as Scalar).to_radians(),
                         0.0,
@@ -289,7 +289,7 @@ fn keyboard_input(
                 CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
                     1250.0,
                     0.92,
-                    400.0,
+                    1200.0,
                     Quat::IDENTITY,
                     (30.0 as Scalar).to_radians(),
                     0.0,
@@ -423,6 +423,8 @@ fn apply_aim_to_gun(
                         rotation: transform.rotation,
                         ..default()
                     },
+                    RigidBody::Dynamic,
+                    Collider::circle(5.0),
                 ));
             }
             fire.0 = 0.0;
