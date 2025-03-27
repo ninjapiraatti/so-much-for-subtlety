@@ -222,18 +222,19 @@ fn apply_aim_to_gun(
           transform.rotation = aim.0;
           if fire.0 > 0.0 {
               let adjusted_aim = aim.0 * Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2); // Rotate by 90 degrees
-              let velocity = (adjusted_aim * Vec3::new(500.0, 0.0, 0.0)).truncate();
+              let velocity = (adjusted_aim * Vec3::new(0.0, 0.0, 0.0)).truncate();
+              let impulse_vector = (adjusted_aim * Vec3::new(500.0, 0.0, 0.0)).truncate(); // Increased impulse value
               println!("Fire impulse: {:?}", fire.0);
               commands.spawn((
                   Projectile {
                       //velocity: aim.0 * Vec2::new(500.0, 0.0), // Set velocity based on the angle
                       //velocity: (aim.0 * Vec3::new(500.0, 0.0, 0.0)).truncate(), // Set velocity based on the angle
                       velocity: velocity,
-                      lifetime: 2.0,
+                      lifetime: 200.0,
                   },
                   Sprite {
                       color: Color::WHITE,
-                      custom_size: Some(Vec2::new(10.0, 10.0)),
+                      custom_size: Some(Vec2::new(30.0, 30.0)),
                       ..default()
                   },
                   Transform {
@@ -241,8 +242,10 @@ fn apply_aim_to_gun(
                       rotation: transform.rotation,
                       ..default()
                   },
+                  Mass(10.0),
                   RigidBody::Dynamic,
-                  Collider::circle(5.0),
+                  Collider::rectangle(30.0, 30.0),
+                  LinearVelocity(impulse_vector),
               ));
           }
           fire.0 = 0.0;

@@ -82,7 +82,7 @@ pub fn keyboard_input(
               CharacterControllerBundle::new(Collider::capsule(12.5, 20.0)).with_movement(
                   1250.0,
                   0.92,
-                  1200.0,
+                  800.0,
                   Quat::IDENTITY,
                   (30.0 as Scalar).to_radians(),
                   0.0,
