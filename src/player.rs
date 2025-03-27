@@ -119,7 +119,7 @@ impl MovementBundle {
 
 impl Default for MovementBundle {
     fn default() -> Self {
-        Self::new(30.0, 0.9, 200.0, Quat::IDENTITY, PI * 0.45, 0.0)
+        Self::new(30.0, 0.1, 200.0, Quat::IDENTITY, PI * 0.45, 0.0)
     }
 }
 
