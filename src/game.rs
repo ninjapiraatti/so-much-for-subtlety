@@ -16,7 +16,7 @@ pub fn setup(
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-  // A cube to move around
+  // A cube to move around (keep this)
   commands.spawn((
       Sprite {
           color: Color::srgb(0.0, 0.4, 0.7),
@@ -25,109 +25,66 @@ pub fn setup(
       },
       Transform::from_xyz(50.0, -100.0, 0.0),
       RigidBody::Dynamic,
+      Mass(5.0),
       Collider::rectangle(30.0, 30.0),
+      //Friction::new(0.4).with_dynamic_coefficient(0.6).with_static_coefficient(0.6)
   ));
 
-  // Platforms
+  // Planet surface (large circle)
+  let planet_radius = 5000.0; // Large radius so only part is visible
+
+  // Create a circle mesh with many vertices to make it smooth
+  let segments = 32;
+  let mut circle_mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
+
+  // Vertices for the circle
+  let mut positions = Vec::with_capacity(segments * 3);
+
+  // Create a filled circle using triangles from center
+  for i in 0..segments {
+    let angle1 = 2.0 * std::f32::consts::PI * (i as f32) / (segments as f32);
+    let angle2 = 2.0 * std::f32::consts::PI * ((i + 1) as f32) / (segments as f32);
+
+    // Center point
+    positions.push([0.0, 0.0, 0.0]);
+    // First outer point
+    positions.push([
+        planet_radius * angle1.cos(), 
+        planet_radius * angle1.sin(), 
+        0.0
+    ]);
+    // Second outer point
+    positions.push([
+        planet_radius * angle2.cos(), 
+        planet_radius * angle2.sin(), 
+        0.0
+    ]);
+  }
+
+  circle_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+
+  // Create a circle collider (assuming this exists in your physics system)
+  //let circle_collider = Collider::circle(planet_radius);
+  let mut polygon_vertices = Vec::with_capacity(segments);
+  for i in 0..segments {
+    let angle = 2.0 * std::f32::consts::PI * (i as f32) / (segments as f32);
+    polygon_vertices.push(Vec2::new(
+      planet_radius * angle.cos(),
+      planet_radius * angle.sin()
+    ));
+  }
+
+  let polygon_collider = Collider::polyline(polygon_vertices, None);
+  
   commands.spawn((
-      Sprite {
-          color: Color::srgb(0.7, 0.7, 0.8),
-          custom_size: Some(Vec2::new(1100.0, 50.0)),
-          ..default()
-      },
-      Transform::from_xyz(0.0, -175.0, 0.0),
-      RigidBody::Static,
-      Collider::rectangle(1100.0, 50.0),
-  ));
-  commands.spawn((
-      Sprite {
-          color: Color::srgb(0.7, 0.7, 0.8),
-          custom_size: Some(Vec2::new(300.0, 25.0)),
-          ..default()
-      },
-      Transform::from_xyz(175.0, -35.0, 0.0),
-      RigidBody::Static,
-      Collider::rectangle(300.0, 25.0),
-  ));
-  commands.spawn((
-      Sprite {
-          color: Color::srgb(0.7, 0.7, 0.8),
-          custom_size: Some(Vec2::new(300.0, 25.0)),
-          ..default()
-      },
-      Transform::from_xyz(-175.0, 0.0, 0.0),
-      RigidBody::Static,
-      Collider::rectangle(300.0, 25.0),
-  ));
-  commands.spawn((
-      Sprite {
-          color: Color::srgb(0.7, 0.7, 0.8),
-          custom_size: Some(Vec2::new(150.0, 80.0)),
-          ..default()
-      },
-      Transform::from_xyz(475.0, -110.0, 0.0),
-      RigidBody::Static,
-      Collider::rectangle(150.0, 80.0),
-  ));
-  commands.spawn((
-      Sprite {
-          color: Color::srgb(0.7, 0.7, 0.8),
-          custom_size: Some(Vec2::new(150.0, 80.0)),
-          ..default()
-      },
-      Transform::from_xyz(-475.0, -110.0, 0.0),
-      RigidBody::Static,
-      Collider::rectangle(150.0, 80.0),
-  ));
-
-  // Ramps
-
-  let mut ramp_mesh = Mesh::new(
-      PrimitiveTopology::TriangleList,
-      RenderAssetUsages::default(),
-  );
-
-  ramp_mesh.insert_attribute(
-      Mesh::ATTRIBUTE_POSITION,
-      vec![[-125.0, 80.0, 0.0], [-125.0, 0.0, 0.0], [125.0, 0.0, 0.0]],
-  );
-
-  let ramp_collider = Collider::triangle(
-      Vector::new(-125.0, 80.0),
-      Vector::NEG_X * 125.0,
-      Vector::X * 125.0,
-  );
-
-  commands.spawn((
-      Mesh2d(meshes.add(ramp_mesh)),
-      MeshMaterial2d(materials.add(Color::srgb(0.4, 0.4, 0.5))),
-      Transform::from_xyz(-275.0, -150.0, 0.0),
-      RigidBody::Static,
-      ramp_collider,
-  ));
-
-  let mut ramp_mesh = Mesh::new(
-      PrimitiveTopology::TriangleList,
-      RenderAssetUsages::default(),
-  );
-
-  ramp_mesh.insert_attribute(
-      Mesh::ATTRIBUTE_POSITION,
-      vec![[20.0, -40.0, 0.0], [20.0, 40.0, 0.0], [-20.0, -40.0, 0.0]],
-  );
-
-  let ramp_collider = Collider::triangle(
-      Vector::new(20.0, -40.0),
-      Vector::new(20.0, 40.0),
-      Vector::new(-20.0, -40.0),
-  );
-
-  commands.spawn((
-      Mesh2d(meshes.add(ramp_mesh)),
-      MeshMaterial2d(materials.add(Color::srgb(0.4, 0.4, 0.5))),
-      Transform::from_xyz(380.0, -110.0, 0.0),
-      RigidBody::Static,
-      ramp_collider,
+      Mesh2d(meshes.add(circle_mesh)),
+      MeshMaterial2d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
+      // Position it so only the top part is visible (like a planet surface)
+      Transform::from_xyz(0.0, -5200.0, 0.0),
+      RigidBody::Kinematic,
+      polygon_collider,
+      AngularVelocity(0.01),
+      //Friction::new(0.4).with_dynamic_coefficient(0.6).with_static_coefficient(0.6)
   ));
 
   // Camera

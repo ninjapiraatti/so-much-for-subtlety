@@ -38,6 +38,7 @@ fn main() {
         .insert_resource(PlayerAssignments::default())
         .insert_resource(Gravity(Vector::NEG_Y * 1000.0))
         .add_systems(Startup, setup)
+        //.add_systems(Update, game::rotate_planet)
         //.add_systems(Update, gamepad_system)
         .run();
 }
